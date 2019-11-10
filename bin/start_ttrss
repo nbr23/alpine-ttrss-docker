@@ -1,7 +1,59 @@
-#!/bin/ash
+#!/bin/sh
+set -e
 
-echo "Starting PHP-FPM"
-php-fpm5
+if [ -z "$TTRSS_DB_HOST" ]; then
+    echo >&2 'error: missing required TTRSS_DB_HOST environment variable'
+    echo >&2 '  Did you forget to --link some-mysql-container:mysql?'
+    exit 1
+fi
+if [ -z "$TTRSS_DB_PORT" ]; then
+    echo >&2 'error: missing required TTRSS_DB_PORT environment variable'
+    echo >&2 '  Did you forget to --link some-mysql-container:mysql?'
+    exit 1
+fi
+if [ -z "$TTRSS_DB_NAME" ]; then
+    echo >&2 'error: missing required TTRSS_DB_NAME environment variable'
+    echo >&2 '  Did you forget to --link some-mysql-container:mysql?'
+    exit 1
+fi
+if [ -z "$TTRSS_DB_USER" ]; then
+    echo >&2 'error: missing required TTRSS_DB_USER environment variable'
+    echo >&2 '  Did you forget to --link some-mysql-container:mysql?'
+    exit 1
+fi
+if [ -z "$TTRSS_DB_PASS" ]; then
+    echo >&2 'error: missing required TTRSS_DB_PASS environment variable'
+    echo >&2 '  Did you forget to --link some-mysql-container:mysql?'
+    exit 1
+fi
+if [ -z "$TTRSS_SELF_URL_PATH" ]; then
+    echo >&2 'error: missing required TTRSS_SELF_URL_PATH environment variable'
+    echo >&2 '  Did you forget to --link some-mysql-container:mysql?'
+    exit 1
+fi
+
+
+sed -i "s/TTRSS_DB_HOST/${TTRSS_DB_HOST}/" /var/www/tt-rss/config.php
+sed -i "s/TTRSS_DB_PORT/${TTRSS_DB_PORT}/" /var/www/tt-rss/config.php
+sed -i "s/TTRSS_DB_NAME/${TTRSS_DB_NAME}/" /var/www/tt-rss/config.php
+sed -i "s/TTRSS_DB_USER/${TTRSS_DB_USER}/" /var/www/tt-rss/config.php
+sed -i "s/TTRSS_DB_PASS/${TTRSS_DB_PASS}/" /var/www/tt-rss/config.php
+sed -i "s!TTRSS_SELF_URL_PATH!${TTRSS_SELF_URL_PATH}!" /var/www/tt-rss/config.php
+
+
+_ensure_mysql_running() {
+    #Checking mysql is running (Thank you to Sameersbn)
+    mysql -h$TTRSS_DB_HOST -u$TTRSS_DB_USER -p$TTRSS_DB_PASS $TTRSS_DB_NAME -e "SHOW TABLES" >/dev/null 2>&1
+    while [ $? -ne 0 ]; do
+        mysql -h$TTRSS_DB_HOST -u$TTRSS_DB_USER -p$TTRSS_DB_PASS $TTRSS_DB_NAME -e "SHOW TABLES" >/dev/null 2>&1
+        echo -n "."
+        sleep 1
+    done
+}
+
+echo "Waiting for mysql (${TTRSS_DB_USER}@${TTRSS_DB_HOST}:${TTRSS_DB_NAME})"
+_ensure_mysql_running
+echo "mysql is up"
 
 cd /var/www/tt-rss;
 echo "Setting permissions"
@@ -10,10 +62,27 @@ chmod -R 777 cache
 chmod -R 777 lock
 chmod -R 777 feed-icons
 
+echo Checking if Table exists:
+tables_exists=$(mysql -h$TTRSS_DB_HOST -u$TTRSS_DB_USER -p$TTRSS_DB_PASS $TTRSS_DB_NAME -e "SHOW TABLES")
+if [ "${tables_exists}" == "" ]; then
+    if [ -f /tmp/ttrss.sql ]; then
+      echo Restoring DB backup
+      mysql -h$TTRSS_DB_HOST -u$TTRSS_DB_USER -p$TTRSS_DB_PASS $TTRSS_DB_NAME < /tmp/ttrss.sql
+      rm /tmp/ttrss.sql
+      echo yes | su ttrss -c "php7 ./update.php --update-schema"
+    else
+      echo "Creating ttrss Schema"
+      mysql -h$TTRSS_DB_HOST -u$TTRSS_DB_USER -p$TTRSS_DB_PASS $TTRSS_DB_NAME < /var/www/tt-rss/schema/ttrss_schema_mysql.sql
+    fi
+fi
+echo Done!
+
+echo "Starting PHP-FPM"
+php-fpm7
+
 echo "Starting Nginx"
 nginx
 
 echo "Starting tt-rss update daemon"
-su operator -c "./update_daemon2.php"
 
-
+su ttrss -c "php7 ./update_daemon2.php"

@@ -30,8 +30,8 @@
     // is not used. Requires mcrypt functions.
     // Warning: changing this key will make your stored feed passwords impossible
     // to decrypt.
-    
-    define('SINGLE_USER_MODE', false);
+
+    define('SINGLE_USER_MODE', true);
     // Operate in single user mode, disables all functionality related to
     // multiple users and authentication. Enabling this assumes you have
     // your tt-rss directory protected by other means (e.g. http auth).
@@ -75,11 +75,11 @@
 
     // Please see PLUGINS below to configure various authentication modules.
 
-    define('AUTH_AUTO_CREATE', true);
+    define('AUTH_AUTO_CREATE', false);
     // Allow authentication modules to auto-create users in tt-rss internal
     // database when authenticated successfully.
 
-    define('AUTH_AUTO_LOGIN', true);
+    define('AUTH_AUTO_LOGIN', false);
     // Automatically login user on remote or other kind of externally supplied
     // authentication, otherwise redirect to login form as normal.
     // If set to true, users won't be able to set application language
@@ -136,7 +136,7 @@
     // **********************************
     // *** Cookies and login sessions ***
     // **********************************
-    
+
     define('SESSION_COOKIE_LIFETIME', 86400);
     // Default lifetime of a session (e.g. login) cookie. In seconds, 
     // 0 means cookie will be deleted when browser closes.
@@ -156,7 +156,7 @@
     define('SMTP_SERVER', '');
     // Hostname:port combination to send outgoing mail (i.e. localhost:25). 
     // Blank - use system MTA.
-    
+
     define('SMTP_LOGIN', '');
     define('SMTP_PASSWORD', '');
     // These two options enable SMTP authentication when sending
@@ -165,14 +165,14 @@
     define('SMTP_SECURE', '');
     // Used to select a secure SMTP connection. Allowed values: ssl, tls,
     // or empty.
-    
+
     // ***************************************
     // *** Other settings (less important) ***
     // ***************************************
 
-    define('CHECK_FOR_UPDATES', true);
+    define('CHECK_FOR_UPDATES', false);
     // Check for updates automatically if running Git version
- 
+
     define('ENABLE_GZIP_OUTPUT', false);
     // Selectively gzip output to improve wire performance. This requires
     // PHP Zlib extension on the server.
@@ -188,7 +188,7 @@
     // disable plugins specified in this list.
     // Disabling auth_internal in this list would automatically disable
     // reset password link on the login form.
-    
+
     define('LOG_DESTINATION', 'sql');
     // Log destination to use. Possible values: sql (uses internal logging
     // you can read in Preferences -> System), syslog - logs to system log.
